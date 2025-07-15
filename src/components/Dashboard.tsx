@@ -1,12 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-
-interface Task {
-  id: number;
-  text: string;
-  priority: 'high' | 'medium' | 'low';
-  status: 'pending' | 'in-progress' | 'completed';
-}
+import { getTasks, createTask, updateTaskStatus, updateTaskPriority, deleteTask, Task } from '../lib/tasks';
+import { Loader2, Plus, Trash2 } from 'lucide-react';
+import UserProfile from './UserProfile';
 
 interface DashboardProps {
   onLogout: () => void;
@@ -14,41 +10,116 @@ interface DashboardProps {
 
 function Dashboard({ onLogout }: DashboardProps) {
   const { user } = useAuth();
-  const [tasks, setTasks] = useState<Task[]>([
-    { id: 1, text: 'Finish homework', priority: 'high', status: 'in-progress' },
-    { id: 2, text: 'Call John', priority: 'medium', status: 'pending' },
-    { id: 3, text: 'Buy groceries', priority: 'low', status: 'completed' }
-  ]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
   const [newTask, setNewTask] = useState('');
   const [newPriority, setNewPriority] = useState<'high' | 'medium' | 'low'>('medium');
   const [newStatus, setNewStatus] = useState<'pending' | 'in-progress' | 'completed'>('pending');
+  const [isAddingTask, setIsAddingTask] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleAddTask = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newTask.trim()) {
-      const newTaskObj: Task = {
-        id: Date.now(),
-        text: newTask.trim(),
-        priority: newPriority,
-        status: newStatus
-      };
-      setTasks([...tasks, newTaskObj]);
-      setNewTask('');
-      setNewPriority('medium');
-      setNewStatus('pending');
+  useEffect(() => {
+    if (user) {
+      loadTasks();
+    }
+  }, [user]);
+
+  const loadTasks = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await getTasks();
+      
+      if (error) {
+        setError('Failed to load tasks');
+        console.error('Error loading tasks:', error);
+      } else {
+        setTasks(data || []);
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+      console.error('Error:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const updateTaskStatus = (id: number, newStatus: 'pending' | 'in-progress' | 'completed') => {
-    setTasks(tasks.map(task => 
-      task.id === id ? { ...task, status: newStatus } : task
-    ));
+  const handleAddTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTask.trim()) return;
+
+    try {
+      setIsAddingTask(true);
+      setError(null);
+      
+      const { data, error } = await createTask(newTask.trim(), newPriority, newStatus);
+      
+      if (error) {
+        setError('Failed to create task');
+        console.error('Error creating task:', error);
+      } else if (data) {
+        setTasks([data, ...tasks]);
+        setNewTask('');
+        setNewPriority('medium');
+        setNewStatus('pending');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+      console.error('Error:', err);
+    } finally {
+      setIsAddingTask(false);
+    }
   };
 
-  const updateTaskPriority = (id: number, newPriority: 'high' | 'medium' | 'low') => {
-    setTasks(tasks.map(task => 
-      task.id === id ? { ...task, priority: newPriority } : task
-    ));
+  const handleUpdateTaskStatus = async (id: string, newStatus: 'pending' | 'in-progress' | 'completed') => {
+    try {
+      const { data, error } = await updateTaskStatus(id, newStatus);
+      
+      if (error) {
+        setError('Failed to update task status');
+        console.error('Error updating task status:', error);
+      } else if (data) {
+        setTasks(tasks.map(task => 
+          task.id === id ? data : task
+        ));
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+      console.error('Error:', err);
+    }
+  };
+
+  const handleUpdateTaskPriority = async (id: string, newPriority: 'high' | 'medium' | 'low') => {
+    try {
+      const { data, error } = await updateTaskPriority(id, newPriority);
+      
+      if (error) {
+        setError('Failed to update task priority');
+        console.error('Error updating task priority:', error);
+      } else if (data) {
+        setTasks(tasks.map(task => 
+          task.id === id ? data : task
+        ));
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+      console.error('Error:', err);
+    }
+  };
+
+  const handleDeleteTask = async (id: string) => {
+    try {
+      const { error } = await deleteTask(id);
+      
+      if (error) {
+        setError('Failed to delete task');
+        console.error('Error deleting task:', error);
+      } else {
+        setTasks(tasks.filter(task => task.id !== id));
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+      console.error('Error:', err);
+    }
   };
 
   const getPriorityColor = (priority: string) => {
@@ -69,140 +140,184 @@ function Dashboard({ onLogout }: DashboardProps) {
     }
   };
 
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-sky-100 to-blue-200 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-xl text-gray-600">Please log in to access your dashboard.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sky-100 to-blue-200 flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl">
-        {/* Main Content Container */}
-        <div className="bg-white rounded-3xl shadow-xl p-8 md:p-12">
-          {/* Dashboard Heading */}
-          <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4 tracking-tight">
-              Your Tasks
-            </h1>
-            {user && (
+    <div className="min-h-screen bg-gradient-to-br from-sky-100 to-blue-200">
+      {/* Header with User Profile */}
+      <div className="bg-white/30 backdrop-blur-sm border-b border-white/20">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-gray-800">TaskFlow Dashboard</h1>
+          <UserProfile onLogout={onLogout} />
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          {/* Main Content Container */}
+          <div className="bg-white rounded-3xl shadow-xl p-8 md:p-12">
+            {/* Dashboard Heading */}
+            <div className="text-center mb-12">
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4 tracking-tight">
+                Your Tasks
+              </h2>
               <p className="text-lg text-gray-600">
                 Welcome back, {user.user_metadata?.full_name || user.email}!
               </p>
-            )}
-          </div>
-          
-          {/* Tasks List */}
-          <div className="mb-12">
-            <div className="space-y-6">
-              {tasks.map((task, index) => (
-                <div key={task.id} className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center">
-                      <span className="font-semibold text-blue-600 mr-4 min-w-[2rem] text-lg">
-                        {index + 1}.
-                      </span>
-                      <span className="text-lg text-gray-700 font-medium">{task.text}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="ml-12 flex flex-wrap gap-4 items-center">
-                    {/* Priority Selector */}
-                    <div className="flex items-center gap-2">
-                      <label className="text-sm font-medium text-gray-600">Priority:</label>
-                      <select
-                        value={task.priority}
-                        onChange={(e) => updateTaskPriority(task.id, e.target.value as 'high' | 'medium' | 'low')}
-                        className={`px-3 py-1 rounded-full text-xs font-medium border ${getPriorityColor(task.priority)} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                      >
-                        <option value="high">High</option>
-                        <option value="medium">Medium</option>
-                        <option value="low">Low</option>
-                      </select>
-                    </div>
-                    
-                    {/* Status Selector */}
-                    <div className="flex items-center gap-2">
-                      <label className="text-sm font-medium text-gray-600">Status:</label>
-                      <select
-                        value={task.status}
-                        onChange={(e) => updateTaskStatus(task.id, e.target.value as 'pending' | 'in-progress' | 'completed')}
-                        className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(task.status)} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="in-progress">In Progress</option>
-                        <option value="completed">Completed</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          {/* Add New Task Form */}
-          <form onSubmit={handleAddTask} className="mb-8">
-            <div className="mb-6">
-              <label 
-                htmlFor="newTask" 
-                className="block text-lg font-semibold text-gray-700 mb-3"
-              >
-                New Task
-              </label>
-              <input
-                type="text"
-                id="newTask"
-                value={newTask}
-                onChange={(e) => setNewTask(e.target.value)}
-                className="w-full px-4 py-4 text-lg border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors duration-300 bg-gray-50 focus:bg-white"
-                placeholder="Enter a new task"
-              />
             </div>
             
-            {/* Priority and Status Selectors for New Task */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div>
-                <label className="block text-lg font-semibold text-gray-700 mb-3">
-                  Priority
-                </label>
-                <select
-                  value={newPriority}
-                  onChange={(e) => setNewPriority(e.target.value as 'high' | 'medium' | 'low')}
-                  className="w-full px-4 py-4 text-lg border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors duration-300 bg-gray-50 focus:bg-white"
-                >
-                  <option value="high">High</option>
-                  <option value="medium">Medium</option>
-                  <option value="low">Low</option>
-                </select>
+            {/* Error Message */}
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+                <p className="text-red-600 text-center font-medium">{error}</p>
+              </div>
+            )}
+            
+            {/* Add New Task Form */}
+            <form onSubmit={handleAddTask} className="mb-12 bg-gray-50 rounded-2xl p-6">
+              <h3 className="text-xl font-semibold text-gray-800 mb-4">Add New Task</h3>
+              
+              <div className="mb-4">
+                <input
+                  type="text"
+                  value={newTask}
+                  onChange={(e) => setNewTask(e.target.value)}
+                  className="w-full px-4 py-3 text-lg border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors duration-300 bg-white"
+                  placeholder="Enter a new task"
+                  required
+                />
               </div>
               
-              <div>
-                <label className="block text-lg font-semibold text-gray-700 mb-3">
-                  Status
-                </label>
-                <select
-                  value={newStatus}
-                  onChange={(e) => setNewStatus(e.target.value as 'pending' | 'in-progress' | 'completed')}
-                  className="w-full px-4 py-4 text-lg border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors duration-300 bg-gray-50 focus:bg-white"
-                >
-                  <option value="pending">Pending</option>
-                  <option value="in-progress">In Progress</option>
-                  <option value="completed">Completed</option>
-                </select>
+              {/* Priority and Status Selectors for New Task */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Priority
+                  </label>
+                  <select
+                    value={newPriority}
+                    onChange={(e) => setNewPriority(e.target.value as 'high' | 'medium' | 'low')}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors duration-300 bg-white"
+                  >
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Status
+                  </label>
+                  <select
+                    value={newStatus}
+                    onChange={(e) => setNewStatus(e.target.value as 'pending' | 'in-progress' | 'completed')}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors duration-300 bg-white"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="in-progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                </div>
               </div>
-            </div>
+              
+              {/* Add Task Button */}
+              <button
+                type="submit"
+                disabled={isAddingTask || !newTask.trim()}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg active:scale-95 disabled:transform-none disabled:shadow-none flex items-center justify-center gap-2"
+              >
+                {isAddingTask ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Adding Task...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-5 h-5" />
+                    Add Task
+                  </>
+                )}
+              </button>
+            </form>
             
-            {/* Add Task Button */}
-            <button
-              type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 rounded-xl text-lg md:text-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg active:scale-95 mb-6"
-            >
-              Add Task
-            </button>
-          </form>
-          
-          {/* Logout Button */}
-          <div className="text-center">
-            <button 
-              onClick={onLogout}
-              className="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-4 px-8 rounded-xl text-lg md:text-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg active:scale-95"
-            >
-              Logout
-            </button>
+            {/* Tasks List */}
+            {loading ? (
+              <div className="text-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
+                <p className="text-gray-600">Loading your tasks...</p>
+              </div>
+            ) : tasks.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-600 text-lg">No tasks yet. Create your first task above!</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold text-gray-800 mb-4">Your Tasks ({tasks.length})</h3>
+                {tasks.map((task, index) => (
+                  <div key={task.id} className="bg-gray-50 rounded-xl p-6 border border-gray-200 hover:shadow-md transition-shadow">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center flex-1">
+                        <span className="font-semibold text-blue-600 mr-4 min-w-[2rem] text-lg">
+                          {index + 1}.
+                        </span>
+                        <span className="text-lg text-gray-700 font-medium flex-1">{task.text}</span>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteTask(task.id)}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors ml-4"
+                        title="Delete task"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                    
+                    <div className="ml-12 flex flex-wrap gap-4 items-center">
+                      {/* Priority Selector */}
+                      <div className="flex items-center gap-2">
+                        <label className="text-sm font-medium text-gray-600">Priority:</label>
+                        <select
+                          value={task.priority}
+                          onChange={(e) => handleUpdateTaskPriority(task.id, e.target.value as 'high' | 'medium' | 'low')}
+                          className={`px-3 py-1 rounded-full text-xs font-medium border ${getPriorityColor(task.priority)} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                        >
+                          <option value="high">High</option>
+                          <option value="medium">Medium</option>
+                          <option value="low">Low</option>
+                        </select>
+                      </div>
+                      
+                      {/* Status Selector */}
+                      <div className="flex items-center gap-2">
+                        <label className="text-sm font-medium text-gray-600">Status:</label>
+                        <select
+                          value={task.status}
+                          onChange={(e) => handleUpdateTaskStatus(task.id, e.target.value as 'pending' | 'in-progress' | 'completed')}
+                          className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(task.status)} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="in-progress">In Progress</option>
+                          <option value="completed">Completed</option>
+                        </select>
+                      </div>
+                      
+                      {/* Created Date */}
+                      <div className="text-xs text-gray-500">
+                        Created: {new Date(task.created_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

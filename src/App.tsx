@@ -97,10 +97,11 @@ function App() {
           
           <button 
             onClick={() => setCurrentPage('dashboard')}
-            className="group bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-semibold py-4 px-8 rounded-2xl text-lg transition-all duration-300 transform hover:scale-105 hover:shadow-xl min-w-[200px] flex items-center justify-center gap-3"
+            className={`group ${user ? 'bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600' : 'bg-gray-400 cursor-not-allowed'} text-white font-semibold py-4 px-8 rounded-2xl text-lg transition-all duration-300 transform hover:scale-105 hover:shadow-xl min-w-[200px] flex items-center justify-center gap-3`}
+            disabled={!user}
           >
             <LayoutDashboard className="w-5 h-5 group-hover:scale-110 transition-transform" />
-            {user ? 'Dashboard' : 'Go to Dashboard'}
+            {user ? 'Dashboard' : 'Login Required'}
           </button>
         </div>
         
