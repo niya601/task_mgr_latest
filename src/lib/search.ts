@@ -31,10 +31,7 @@ export const smartSearch = async (query: string): Promise<{ data: SearchResult[]
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ 
-        query: query.trim(),
-        userId: user.id 
-      }),
+      body: JSON.stringify({ query: query.trim() }),
     });
 
     if (!response.ok) {

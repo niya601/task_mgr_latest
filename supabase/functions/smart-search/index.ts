@@ -6,7 +6,6 @@ const corsHeaders = {
 
 interface SearchRequest {
   query: string;
-  userId: string;
 }
 
 interface TaskResult {
@@ -38,13 +37,25 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { query, userId }: SearchRequest = await req.json();
+    const { query }: SearchRequest = await req.json();
 
-    if (!query || typeof query !== 'string' || !userId) {
+    if (!query || typeof query !== 'string') {
       return new Response(
-        JSON.stringify({ error: "Query and userId are required" }),
+        JSON.stringify({ error: "Query is required" }),
         {
           status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Get user from auth header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Authorization required" }),
+        {
+          status: 401,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
@@ -81,18 +92,32 @@ Deno.serve(async (req: Request) => {
     const { createClient } = await import("npm:@supabase/supabase-js@2");
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // First, let's check if we have embeddings for tasks, if not we'll do text similarity
-    const { data: tasks, error: tasksError } = await supabase
-      .from('tasks')
-      .select('id, text, priority, status, created_at, user_id')
-      .eq('user_id', userId)
-      .is('parent_task_id', null) // Only search parent tasks
-      .order('created_at', { ascending: false });
-
-    if (tasksError) {
-      console.error('Error fetching tasks:', tasksError);
+    // Get user from JWT token
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    
+    if (userError || !user) {
       return new Response(
-        JSON.stringify({ error: "Failed to fetch tasks" }),
+        JSON.stringify({ error: "Invalid authentication" }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Use vector similarity search with stored embeddings
+    const { data: tasks, error: searchError } = await supabase.rpc('search_tasks_by_similarity', {
+      query_embedding: queryEmbedding,
+      user_id: user.id,
+      similarity_threshold: 0.1,
+      match_count: 5
+    });
+
+    if (searchError) {
+      console.error('Vector search error:', searchError);
+      return new Response(
+        JSON.stringify({ error: "Search failed" }),
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -100,51 +125,18 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    if (!tasks || tasks.length === 0) {
-      return new Response(
-        JSON.stringify({ results: [] }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Generate embeddings for all tasks and calculate similarity
-    const taskResults: TaskResult[] = [];
-
-    for (const task of tasks) {
-      try {
-        // Generate embedding for task text
-        const taskEmbedding = await model.run(task.text, { mean_pool: true, normalize: true });
-        
-        if (taskEmbedding && Array.isArray(taskEmbedding)) {
-          // Calculate cosine similarity
-          const similarity = calculateCosineSimilarity(queryEmbedding, taskEmbedding);
-          
-          taskResults.push({
-            id: task.id,
-            text: task.text,
-            priority: task.priority,
-            status: task.status,
-            created_at: task.created_at,
-            similarity: similarity
-          });
-        }
-      } catch (error) {
-        console.error(`Error processing task ${task.id}:`, error);
-        // Continue with other tasks
-      }
-    }
-
-    // Sort by similarity (highest first) and take top 5
-    const topResults = taskResults
-      .sort((a, b) => b.similarity - a.similarity)
-      .slice(0, 5)
-      .filter(result => result.similarity > 0.1); // Filter out very low similarity results
+    // Format results
+    const results = (tasks || []).map((task: any) => ({
+      id: task.id,
+      text: task.text,
+      priority: task.priority,
+      status: task.status,
+      created_at: task.created_at,
+      similarity: task.similarity
+    }));
 
     return new Response(
-      JSON.stringify({ results: topResults }),
+      JSON.stringify({ results }),
       {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -162,26 +154,3 @@ Deno.serve(async (req: Request) => {
     );
   }
 });
-
-// Helper function to calculate cosine similarity between two vectors
-function calculateCosineSimilarity(vecA: number[], vecB: number[]): number {
-  if (vecA.length !== vecB.length) {
-    return 0;
-  }
-
-  let dotProduct = 0;
-  let normA = 0;
-  let normB = 0;
-
-  for (let i = 0; i < vecA.length; i++) {
-    dotProduct += vecA[i] * vecB[i];
-    normA += vecA[i] * vecA[i];
-    normB += vecB[i] * vecB[i];
-  }
-
-  if (normA === 0 || normB === 0) {
-    return 0;
-  }
-
-  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
-}
