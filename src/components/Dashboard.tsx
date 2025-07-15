@@ -8,9 +8,10 @@ import UserProfile from './UserProfile';
 interface DashboardProps {
   onLogout: () => void;
   onBackToHome: () => void;
+  onGoToProfile: () => void;
 }
 
-function Dashboard({ onLogout, onBackToHome }: DashboardProps) {
+function Dashboard({ onLogout, onBackToHome, onGoToProfile }: DashboardProps) {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -221,7 +222,8 @@ function Dashboard({ onLogout, onBackToHome }: DashboardProps) {
             </button>
             <h1 className="text-2xl font-bold text-gray-800">TaskFlow Dashboard</h1>
           </div>
-          <UserProfile onLogout={onLogout} />
+          <UserProfile onLogout={onLogout} onGoToProfile={onGoToProfile} />
+          <UserProfile onLogout={onLogout} onGoToProfile={() => setCurrentPage('profile')} />
         </div>
       </div>
 

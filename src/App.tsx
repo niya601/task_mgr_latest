@@ -53,6 +53,7 @@ function App() {
         console.log('Setting page to home');
         setCurrentPage('home');
       }}
+      onGoToProfile={() => setCurrentPage('profile')}
     />;
   }
   
