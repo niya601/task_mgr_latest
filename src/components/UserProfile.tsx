@@ -28,6 +28,18 @@ function UserProfile({ onLogout, onGoToProfile }: UserProfileProps) {
     }
   };
 
+  // Listen for profile picture updates
+  React.useEffect(() => {
+    const handleProfileUpdate = () => {
+      loadProfilePicture();
+    };
+
+    window.addEventListener('profilePictureUpdated', handleProfileUpdate);
+    return () => {
+      window.removeEventListener('profilePictureUpdated', handleProfileUpdate);
+    };
+  }, []);
+
   if (!user) return null;
 
   const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';

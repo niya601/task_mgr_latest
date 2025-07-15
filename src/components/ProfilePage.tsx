@@ -67,6 +67,8 @@ function ProfilePage({ onLogout, onBackToHome }: ProfilePageProps) {
         setSuccess('Profile picture updated successfully!');
         // Clear success message after 3 seconds
         setTimeout(() => setSuccess(null), 3000);
+        // Trigger a page refresh or state update to show new picture in header
+        window.dispatchEvent(new CustomEvent('profilePictureUpdated'));
       }
     } catch (err) {
       setError('An unexpected error occurred');
