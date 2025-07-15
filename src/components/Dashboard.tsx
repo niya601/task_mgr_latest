@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { getTasks, createTask, updateTaskStatus, updateTaskPriority, deleteTask, Task } from '../lib/tasks';
+import { generateSubtasks } from '../lib/subtasks';
 import { Loader2, Plus, Trash2, Home, ChevronDown, ChevronUp } from 'lucide-react';
 import UserProfile from './UserProfile';
 
@@ -19,6 +20,9 @@ function Dashboard({ onLogout, onBackToHome }: DashboardProps) {
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isTasksExpanded, setIsTasksExpanded] = useState(false);
+  const [expandedSubtasks, setExpandedSubtasks] = useState<{ [taskId: string]: string[] }>({});
+  const [loadingSubtasks, setLoadingSubtasks] = useState<{ [taskId: string]: boolean }>({});
+  const [subtaskErrors, setSubtaskErrors] = useState<{ [taskId: string]: string }>({});
 
   useEffect(() => {
     if (user) {
@@ -117,6 +121,48 @@ function Dashboard({ onLogout, onBackToHome }: DashboardProps) {
         console.error('Error deleting task:', error);
       } else {
         setTasks(tasks.filter(task => task.id !== id));
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+      console.error('Error:', err);
+    }
+  };
+
+  const handleGenerateSubtasks = async (taskId: string, taskText: string) => {
+    try {
+      setLoadingSubtasks(prev => ({ ...prev, [taskId]: true }));
+      setSubtaskErrors(prev => ({ ...prev, [taskId]: '' }));
+      
+      const { data, error } = await generateSubtasks(taskText);
+      
+      if (error) {
+        setSubtaskErrors(prev => ({ ...prev, [taskId]: 'Failed to generate subtasks' }));
+        console.error('Error generating subtasks:', error);
+      } else if (data) {
+        setExpandedSubtasks(prev => ({ ...prev, [taskId]: data }));
+      }
+    } catch (err) {
+      setSubtaskErrors(prev => ({ ...prev, [taskId]: 'An unexpected error occurred' }));
+      console.error('Error:', err);
+    } finally {
+      setLoadingSubtasks(prev => ({ ...prev, [taskId]: false }));
+    }
+  };
+
+  const handleSaveSubtask = async (subtaskText: string, parentTask: Task) => {
+    try {
+      const { data, error } = await createTask(subtaskText, parentTask.priority, 'pending');
+      
+      if (error) {
+        setError('Failed to save subtask');
+        console.error('Error saving subtask:', error);
+      } else if (data) {
+        setTasks([data, ...tasks]);
+        // Remove the saved subtask from the suggestions
+        setExpandedSubtasks(prev => ({
+          ...prev,
+          [parentTask.id]: prev[parentTask.id]?.filter(s => s !== subtaskText) || []
+        }));
       }
     } catch (err) {
       setError('An unexpected error occurred');
@@ -407,6 +453,55 @@ function Dashboard({ onLogout, onBackToHome }: DashboardProps) {
                             <div className="text-xs text-gray-500">
                               Created: {new Date(task.created_at).toLocaleDateString()}
                             </div>
+                          </div>
+                          
+                          {/* Generate Subtasks Button */}
+                          <div className="ml-10 mt-3">
+                            <button
+                              onClick={() => handleGenerateSubtasks(task.id, task.text)}
+                              disabled={loadingSubtasks[task.id]}
+                              className="bg-purple-100 hover:bg-purple-200 disabled:bg-purple-50 text-purple-700 disabled:text-purple-400 font-medium py-2 px-4 rounded-lg text-sm transition-all duration-300 flex items-center gap-2 disabled:cursor-not-allowed"
+                            >
+                              {loadingSubtasks[task.id] ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  Generating...
+                                </>
+                              ) : (
+                                <>
+                                  ✨ Generate Subtasks with AI
+                                </>
+                              )}
+                            </button>
+                            
+                            {/* Subtask Error */}
+                            {subtaskErrors[task.id] && (
+                              <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg">
+                                <p className="text-red-600 text-sm">{subtaskErrors[task.id]}</p>
+                              </div>
+                            )}
+                            
+                            {/* Generated Subtasks */}
+                            {expandedSubtasks[task.id] && expandedSubtasks[task.id].length > 0 && (
+                              <div className="mt-3 bg-purple-50 rounded-lg p-4 border border-purple-200">
+                                <h4 className="text-sm font-semibold text-purple-800 mb-3">
+                                  AI Generated Subtasks:
+                                </h4>
+                                <div className="space-y-2">
+                                  {expandedSubtasks[task.id].map((subtask, index) => (
+                                    <div key={index} className="flex items-center justify-between bg-white rounded-lg p-3 border border-purple-100">
+                                      <span className="text-sm text-gray-700 flex-1">{subtask}</span>
+                                      <button
+                                        onClick={() => handleSaveSubtask(subtask, task)}
+                                        className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-1 px-3 rounded-md text-xs transition-all duration-300 hover:scale-105 ml-3"
+                                      >
+                                        Save
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}
