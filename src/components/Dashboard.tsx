@@ -12,7 +12,7 @@ function Dashboard({ onLogout }: DashboardProps) {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newTask, setNewTask] = useState('');
+  const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newPriority, setNewPriority] = useState<'high' | 'medium' | 'low'>('medium');
   const [newStatus, setNewStatus] = useState<'pending' | 'in-progress' | 'completed'>('pending');
   const [isAddingTask, setIsAddingTask] = useState(false);
@@ -45,20 +45,20 @@ function Dashboard({ onLogout }: DashboardProps) {
 
   const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTask.trim()) return;
+    if (!newTaskTitle.trim()) return;
 
     try {
       setIsAddingTask(true);
       setError(null);
       
-      const { data, error } = await createTask(newTask.trim(), newPriority, newStatus);
+      const { data, error } = await createTask(newTaskTitle.trim(), newPriority, newStatus);
       
       if (error) {
         setError('Failed to create task');
         console.error('Error creating task:', error);
       } else if (data) {
         setTasks([data, ...tasks]);
-        setNewTask('');
+        setNewTaskTitle('');
         setNewPriority('medium');
         setNewStatus('pending');
       }
@@ -188,10 +188,10 @@ function Dashboard({ onLogout }: DashboardProps) {
               <div className="mb-4">
                 <input
                   type="text"
-                  value={newTask}
-                  onChange={(e) => setNewTask(e.target.value)}
+                  value={newTaskTitle}
+                  onChange={(e) => setNewTaskTitle(e.target.value)}
                   className="w-full px-4 py-3 text-lg border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors duration-300 bg-white"
-                  placeholder="Enter a new task"
+                  placeholder="Enter task title"
                   required
                 />
               </div>
@@ -232,7 +232,7 @@ function Dashboard({ onLogout }: DashboardProps) {
               {/* Add Task Button */}
               <button
                 type="submit"
-                disabled={isAddingTask || !newTask.trim()}
+                disabled={isAddingTask || !newTaskTitle.trim()}
                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg active:scale-95 disabled:transform-none disabled:shadow-none flex items-center justify-center gap-2"
               >
                 {isAddingTask ? (
@@ -269,7 +269,7 @@ function Dashboard({ onLogout }: DashboardProps) {
                         <span className="font-semibold text-blue-600 mr-4 min-w-[2rem] text-lg">
                           {index + 1}.
                         </span>
-                        <span className="text-lg text-gray-700 font-medium flex-1">{task.text}</span>
+                        <span className="text-lg text-gray-700 font-medium flex-1">{task.title}</span>
                       </div>
                       <button
                         onClick={() => handleDeleteTask(task.id)}

@@ -3,7 +3,7 @@ import { supabase } from './supabase'
 export interface Task {
   id: string;
   user_id: string;
-  text: string;
+  title: string;
   priority: 'high' | 'medium' | 'low';
   status: 'pending' | 'in-progress' | 'completed';
   created_at: string;
@@ -20,7 +20,7 @@ export const getTasks = async (): Promise<{ data: Task[] | null; error: any }> =
 }
 
 export const createTask = async (
-  text: string, 
+  title: string, 
   priority: 'high' | 'medium' | 'low', 
   status: 'pending' | 'in-progress' | 'completed'
 ): Promise<{ data: Task | null; error: any }> => {
@@ -35,7 +35,7 @@ export const createTask = async (
     .insert([
       {
         user_id: user.id,
-        text,
+        title,
         priority,
         status,
         updated_at: new Date().toISOString()
