@@ -600,10 +600,9 @@ function Dashboard({ onLogout, onBackToHome }: DashboardProps) {
                     {tasks.filter(task => task.status === 'completed').length}
                   </div>
                   <div className="text-sm text-green-700">Completed</div>
-                      >
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
