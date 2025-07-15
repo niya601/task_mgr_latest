@@ -13,7 +13,7 @@ function Dashboard({ onLogout, onBackToHome }: DashboardProps) {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskText, setNewTaskText] = useState('');
   const [newPriority, setNewPriority] = useState<'high' | 'medium' | 'low'>('medium');
   const [newStatus, setNewStatus] = useState<'pending' | 'in-progress' | 'completed'>('pending');
   const [isAddingTask, setIsAddingTask] = useState(false);
@@ -47,20 +47,20 @@ function Dashboard({ onLogout, onBackToHome }: DashboardProps) {
 
   const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTaskTitle.trim()) return;
+    if (!newTaskText.trim()) return;
 
     try {
       setIsAddingTask(true);
       setError(null);
       
-      const { data, error } = await createTask(newTaskTitle.trim(), newPriority, newStatus);
+      const { data, error } = await createTask(newTaskText.trim(), newPriority, newStatus);
       
       if (error) {
         setError('Failed to create task');
         console.error('Error creating task:', error);
       } else if (data) {
         setTasks([data, ...tasks]);
-        setNewTaskTitle('');
+        setNewTaskText('');
         setNewPriority('medium');
         setNewStatus('pending');
       }
@@ -239,8 +239,8 @@ function Dashboard({ onLogout, onBackToHome }: DashboardProps) {
                     <div className="mb-4">
                       <input
                         type="text"
-                        value={newTaskTitle}
-                        onChange={(e) => setNewTaskTitle(e.target.value)}
+                        value={newTaskText}
+                        onChange={(e) => setNewTaskText(e.target.value)}
                         className="w-full px-4 py-3 text-lg border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors duration-300 bg-white"
                         placeholder="Enter task title"
                         required
@@ -285,7 +285,7 @@ function Dashboard({ onLogout, onBackToHome }: DashboardProps) {
                     <div className="flex gap-3">
                       <button
                         type="submit"
-                        disabled={isAddingTask || !newTaskTitle.trim()}
+                        disabled={isAddingTask || !newTaskText.trim()}
                         className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg active:scale-95 disabled:transform-none disabled:shadow-none flex items-center justify-center gap-2"
                       >
                         {isAddingTask ? (
@@ -355,7 +355,7 @@ function Dashboard({ onLogout, onBackToHome }: DashboardProps) {
                                 ? 'line-through text-gray-500' 
                                 : 'text-gray-700'
                             }`}>
-                              {task.title || task.text}
+                              {task.text}
                             </h3>
                             
                             {/* Priority Badge */}
