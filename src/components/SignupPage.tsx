@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { signUp } from '../lib/supabase';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 
 interface SignupPageProps {
   onBackToHome: () => void;
@@ -9,11 +11,38 @@ function SignupPage({ onBackToHome, onGoToLogin }: SignupPageProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle signup logic here
-    console.log('Signup attempt:', { name, email, password });
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const { data, error } = await signUp(email, password, name);
+      
+      if (error) {
+        setError(error.message);
+      } else if (data.user) {
+        setSuccess('Account created successfully! You can now login.');
+        // Clear form
+        setName('');
+        setEmail('');
+        setPassword('');
+        // Redirect to login after a delay
+        setTimeout(() => {
+          onGoToLogin();
+        }, 2000);
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -25,6 +54,20 @@ function SignupPage({ onBackToHome, onGoToLogin }: SignupPageProps) {
           <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-12 text-center tracking-tight">
             Create Account
           </h1>
+          
+          {/* Error Message */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+              <p className="text-red-600 text-center font-medium">{error}</p>
+            </div>
+          )}
+          
+          {/* Success Message */}
+          {success && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl">
+              <p className="text-green-600 text-center font-medium">{success}</p>
+            </div>
+          )}
           
           {/* Signup Form */}
           <form onSubmit={handleSubmit} className="space-y-8">
@@ -74,24 +117,37 @@ function SignupPage({ onBackToHome, onGoToLogin }: SignupPageProps) {
               >
                 Password
               </label>
-              <input
-                type="password"
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-4 text-lg border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors duration-300 bg-gray-50 focus:bg-white"
-                placeholder="Create a password"
-                required
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-4 pr-12 text-lg border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors duration-300 bg-gray-50 focus:bg-white"
+                  placeholder="Create a password"
+                  required
+                  minLength={6}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              <p className="text-sm text-gray-500 mt-1">Password must be at least 6 characters long</p>
             </div>
             
             {/* Signup Button */}
             <div className="pt-4">
               <button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 rounded-xl text-lg md:text-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg active:scale-95"
+                disabled={loading}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-semibold py-4 px-8 rounded-xl text-lg md:text-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg active:scale-95 disabled:transform-none disabled:shadow-none flex items-center justify-center gap-2"
               >
-                Signup
+                {loading && <Loader2 className="w-5 h-5 animate-spin" />}
+                {loading ? 'Creating Account...' : 'Sign Up'}
               </button>
             </div>
           </form>

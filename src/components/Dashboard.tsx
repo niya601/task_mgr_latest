@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuth } from '../hooks/useAuth';
 
 interface Task {
   id: number;
@@ -12,6 +13,7 @@ interface DashboardProps {
 }
 
 function Dashboard({ onLogout }: DashboardProps) {
+  const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([
     { id: 1, text: 'Finish homework', priority: 'high', status: 'in-progress' },
     { id: 2, text: 'Call John', priority: 'medium', status: 'pending' },
@@ -73,9 +75,16 @@ function Dashboard({ onLogout }: DashboardProps) {
         {/* Main Content Container */}
         <div className="bg-white rounded-3xl shadow-xl p-8 md:p-12">
           {/* Dashboard Heading */}
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-12 text-center tracking-tight">
-            Your Tasks
-          </h1>
+          <div className="text-center mb-12">
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4 tracking-tight">
+              Your Tasks
+            </h1>
+            {user && (
+              <p className="text-lg text-gray-600">
+                Welcome back, {user.user_metadata?.full_name || user.email}!
+              </p>
+            )}
+          </div>
           
           {/* Tasks List */}
           <div className="mb-12">
