@@ -158,7 +158,7 @@ function Dashboard({ onLogout, onBackToHome }: DashboardProps) {
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-4">
             <button
-              onClick={onBackToHome}
+              onClick={() => onBackToHome()}
               className="flex items-center gap-2 bg-white/80 hover:bg-white/90 text-gray-700 hover:text-blue-600 font-medium py-2 px-4 rounded-xl transition-all duration-300 border border-gray-200 hover:border-blue-300 hover:shadow-md group"
             >
               <Home className="w-4 h-4 group-hover:scale-110 transition-transform" />
@@ -279,13 +279,13 @@ function Dashboard({ onLogout, onBackToHome }: DashboardProps) {
                         <span className="font-semibold text-blue-600 mr-4 min-w-[2rem] text-lg">
                           {index + 1}.
                         </span>
-                        <span className={`text-lg font-medium flex-1 transition-all duration-300 ${
+                        <h3 className={`text-lg font-medium flex-1 transition-all duration-300 ${
                           task.status === 'completed' 
-                            ? 'line-through text-gray-500 opacity-75' 
+                            ? 'line-through text-gray-500' 
                             : 'text-gray-700'
                         }`}>
-                          {task.title}
-                        </span>
+                          {task.title || task.text}
+                        </h3>
                       </div>
                       <button
                         onClick={() => handleDeleteTask(task.id)}

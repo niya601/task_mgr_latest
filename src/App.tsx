@@ -49,7 +49,10 @@ function App() {
   }
   
   if (currentPage === 'dashboard') {
-    return <Dashboard onLogout={handleLogout} onBackToHome={() => setCurrentPage('home')} />;
+    return <Dashboard 
+      onLogout={handleLogout} 
+      onBackToHome={() => setCurrentPage('home')} 
+    />;
   }
 
   return (
