@@ -498,7 +498,10 @@ function Dashboard({ onLogout, onBackToHome }: DashboardProps) {
                                     {/* Subtask Status */}
                                     <select
                                       value={subtask.status}
-                                      onChange={(e) => handleUpdateTaskStatus(subtask.id, e.target.value as 'pending' | 'in-progress' | 'completed')}
+                                      onChange={(e) => {
+                                        const newStatus = e.target.value as 'pending' | 'in-progress' | 'completed';
+                                        handleUpdateTaskStatus(subtask.id, newStatus);
+                                      }}
                                       className={`px-2 py-1 rounded-md text-xs font-medium border-0 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer ${
                                         subtask.status === 'completed'
                                           ? 'bg-green-100 text-green-700'
@@ -598,31 +601,19 @@ function Dashboard({ onLogout, onBackToHome }: DashboardProps) {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
                 <div className="bg-blue-50 rounded-xl p-4 text-center">
                   <div className="text-2xl font-bold text-blue-600">
-                    {tasks.reduce((count, task) => {
-                      const mainTaskCount = task.status === 'pending' ? 1 : 0;
-                      const subtaskCount = (task.subtasks || []).filter(st => st.status === 'pending').length;
-                      return count + mainTaskCount + subtaskCount;
-                    }, 0)}
+                    {tasks.filter(task => task.status === 'pending').length}
                   </div>
                   <div className="text-sm text-blue-700">Pending Tasks</div>
                 </div>
                 <div className="bg-yellow-50 rounded-xl p-4 text-center">
                   <div className="text-2xl font-bold text-yellow-600">
-                    {tasks.reduce((count, task) => {
-                      const mainTaskCount = task.status === 'in-progress' ? 1 : 0;
-                      const subtaskCount = (task.subtasks || []).filter(st => st.status === 'in-progress').length;
-                      return count + mainTaskCount + subtaskCount;
-                    }, 0)}
+                    {tasks.filter(task => task.status === 'in-progress').length}
                   </div>
                   <div className="text-sm text-yellow-700">In Progress</div>
                 </div>
                 <div className="bg-green-50 rounded-xl p-4 text-center">
                   <div className="text-2xl font-bold text-green-600">
-                    {tasks.reduce((count, task) => {
-                      const mainTaskCount = task.status === 'completed' ? 1 : 0;
-                      const subtaskCount = (task.subtasks || []).filter(st => st.status === 'completed').length;
-                      return count + mainTaskCount + subtaskCount;
-                    }, 0)}
+                    {tasks.filter(task => task.status === 'completed').length}
                   </div>
                   <div className="text-sm text-green-700">Completed</div>
                 </div>
