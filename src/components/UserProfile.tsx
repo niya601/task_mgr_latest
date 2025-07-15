@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { User, LogOut, Settings, ChevronDown } from 'lucide-react';
+import { User, LogOut, Settings, ChevronDown, UserCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 interface UserProfileProps {
   onLogout: () => void;
+  onGoToProfile?: () => void;
 }
 
-function UserProfile({ onLogout }: UserProfileProps) {
+function UserProfile({ onLogout, onGoToProfile }: UserProfileProps) {
   const { user } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -51,12 +52,12 @@ function UserProfile({ onLogout }: UserProfileProps) {
               <button
                 onClick={() => {
                   setIsDropdownOpen(false);
-                  // Add settings functionality here if needed
+                  onGoToProfile?.();
                 }}
                 className="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
               >
-                <Settings className="w-4 h-4" />
-                Settings
+                <UserCircle className="w-4 h-4" />
+                Profile Settings
               </button>
               
               <button

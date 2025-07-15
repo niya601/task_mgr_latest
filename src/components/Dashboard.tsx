@@ -222,6 +222,13 @@ function Dashboard({ onLogout, onBackToHome }: DashboardProps) {
             <h1 className="text-2xl font-bold text-gray-800">TaskFlow Dashboard</h1>
           </div>
           <UserProfile onLogout={onLogout} />
+          <UserProfile 
+            onLogout={onLogout} 
+            onGoToProfile={() => {
+              // We can't navigate to profile from dashboard directly
+              // User needs to go back to home first, then access profile
+            }}
+          />
         </div>
       </div>
 

@@ -5,10 +5,11 @@ import { signOut } from './lib/supabase';
 import LoginPage from './components/LoginPage';
 import SignupPage from './components/SignupPage';
 import Dashboard from './components/Dashboard';
+import ProfilePage from './components/ProfilePage';
 import UserProfile from './components/UserProfile';
 
 function App() {
-  const [currentPage, setCurrentPage] = React.useState<'home' | 'login' | 'signup' | 'dashboard'>('home');
+  const [currentPage, setCurrentPage] = React.useState<'home' | 'login' | 'signup' | 'dashboard' | 'profile'>('home');
   const { user, loading } = useAuth();
 
   // Show loading spinner while checking auth state
@@ -54,6 +55,13 @@ function App() {
       }}
     />;
   }
+  
+  if (currentPage === 'profile') {
+    return <ProfilePage 
+      onLogout={handleLogout} 
+      onBackToHome={() => setCurrentPage('home')}
+    />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100">
@@ -61,7 +69,10 @@ function App() {
       {user && (
         <div className="bg-white/30 backdrop-blur-sm border-b border-white/20">
           <div className="container mx-auto px-4 py-4 flex justify-end">
-            <UserProfile onLogout={handleLogout} />
+            <UserProfile 
+              onLogout={handleLogout} 
+              onGoToProfile={() => setCurrentPage('profile')}
+            />
           </div>
         </div>
       )}
