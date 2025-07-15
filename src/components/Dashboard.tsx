@@ -119,6 +119,31 @@ function Dashboard({ onLogout, onBackToHome, onGoToProfile }: DashboardProps) {
     }
   };
 
+  const handleUpdateSubtaskStatus = async (subtaskId: string, newStatus: 'pending' | 'in-progress' | 'completed', parentTaskId: string) => {
+    try {
+      const { data, error } = await updateTaskStatus(subtaskId, newStatus);
+      
+      if (error) {
+        setError('Failed to update subtask status');
+        console.error('Error updating subtask status:', error);
+      } else if (data) {
+        // Update the subtask within the parent task
+        setTasks(tasks.map(task => 
+          task.id === parentTaskId 
+            ? {
+                ...task,
+                subtasks: task.subtasks?.map(subtask =>
+                  subtask.id === subtaskId ? data : subtask
+                ) || []
+              }
+            : task
+        ));
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+      console.error('Error:', err);
+    }
+  };
   const handleDeleteTask = async (id: string) => {
     try {
       const { error } = await deleteTask(id);
@@ -628,8 +653,9 @@ function Dashboard({ onLogout, onBackToHome, onGoToProfile }: DashboardProps) {
                                 {/* Subtask Checkbox */}
                                 <button
                                   onClick={() => handleUpdateTaskStatus(
-                                    subtask.id, 
-                                    subtask.status === 'completed' ? 'pending' : 'completed'
+                                    subtask.id,
+                                    subtask.status === 'completed' ? 'pending' : 'completed',
+                                    task.id
                                   )}
                                   className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all duration-200 ${
                                     subtask.status === 'completed'
@@ -658,7 +684,7 @@ function Dashboard({ onLogout, onBackToHome, onGoToProfile }: DashboardProps) {
                                   value={subtask.status}
                                   onChange={(e) => {
                                     const newStatus = e.target.value as 'pending' | 'in-progress' | 'completed';
-                                    handleUpdateTaskStatus(subtask.id, newStatus);
+                                    handleUpdateSubtaskStatus(subtask.id, newStatus, task.id);
                                   }}
                                   className={`px-2 py-1 rounded-md text-xs font-medium border-0 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer ${
                                     subtask.status === 'completed'
