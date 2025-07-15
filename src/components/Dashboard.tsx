@@ -277,11 +277,33 @@ function Dashboard({ onLogout, onBackToHome }: DashboardProps) {
                 <h3 className="text-xl font-semibold text-gray-800 mb-4">Your Tasks ({tasks.length})</h3>
                 {tasks.map((task, index) => (
                   <div key={task.id} className="bg-gray-50 rounded-xl p-6 border border-gray-200 hover:shadow-md transition-shadow">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center flex-1">
-                        <span className="font-semibold text-blue-600 mr-4 min-w-[2rem] text-lg">
-                          {index + 1}.
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center flex-1 gap-4">
+                        {/* Task Number */}
+                        <span className="font-semibold text-blue-600 text-sm min-w-[1.5rem]">
+                          {index + 1}
                         </span>
+                        
+                        {/* Checkbox */}
+                        <button
+                          onClick={() => handleUpdateTaskStatus(
+                            task.id, 
+                            task.status === 'completed' ? 'pending' : 'completed'
+                          )}
+                          className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${
+                            task.status === 'completed'
+                              ? 'bg-blue-500 border-blue-500 text-white'
+                              : 'border-gray-300 hover:border-blue-400 bg-white'
+                          }`}
+                        >
+                          {task.status === 'completed' && (
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </button>
+                        
+                        {/* Task Title */}
                         <h3 className={`text-lg font-medium flex-1 transition-all duration-300 ${
                           task.status === 'completed' 
                             ? 'line-through text-gray-500' 
@@ -290,47 +312,60 @@ function Dashboard({ onLogout, onBackToHome }: DashboardProps) {
                           {task.title || task.text}
                         </h3>
                       </div>
+                      
+                      {/* Priority and Status Badges */}
+                      <div className="flex items-center gap-3">
+                        {/* Priority Badge */}
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={task.priority}
+                            onChange={(e) => handleUpdateTaskPriority(task.id, e.target.value as 'high' | 'medium' | 'low')}
+                            className={`px-3 py-1 rounded-full text-sm font-medium border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer ${
+                              task.priority === 'high' 
+                                ? 'bg-red-100 text-red-700' 
+                                : task.priority === 'medium'
+                                ? 'bg-yellow-100 text-yellow-700'
+                                : 'bg-green-100 text-green-700'
+                            }`}
+                          >
+                            <option value="high">⚡ High</option>
+                            <option value="medium">⏰ Medium</option>
+                            <option value="low">⭕ Low</option>
+                          </select>
+                        </div>
+                        
+                        {/* Status Badge */}
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={task.status}
+                            onChange={(e) => handleUpdateTaskStatus(task.id, e.target.value as 'pending' | 'in-progress' | 'completed')}
+                            className={`px-3 py-1 rounded-full text-sm font-medium border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer ${
+                              task.status === 'completed'
+                                ? 'bg-green-100 text-green-700'
+                                : task.status === 'in-progress'
+                                ? 'bg-blue-100 text-blue-700'
+                                : 'bg-gray-100 text-gray-700'
+                            }`}
+                          >
+                            <option value="pending">⏳ Pending</option>
+                            <option value="in-progress">📋 In Progress</option>
+                            <option value="completed">✅ Done</option>
+                          </select>
+                        </div>
+                      </div>
+                      
+                      {/* Delete Button */}
                       <button
                         onClick={() => handleDeleteTask(task.id)}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors ml-4"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors ml-2"
                         title="Delete task"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                     
-                    <div className={`ml-12 flex flex-wrap gap-4 items-center transition-opacity duration-300 ${
-                      task.status === 'completed' ? 'opacity-60' : 'opacity-100'
-                    }`}>
-                      {/* Priority Selector */}
-                      <div className="flex items-center gap-2">
-                        <label className="text-sm font-medium text-gray-600">Priority:</label>
-                        <select
-                          value={task.priority}
-                          onChange={(e) => handleUpdateTaskPriority(task.id, e.target.value as 'high' | 'medium' | 'low')}
-                          className={`px-3 py-1 rounded-full text-xs font-medium border ${getPriorityColor(task.priority)} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                        >
-                          <option value="high">High</option>
-                          <option value="medium">Medium</option>
-                          <option value="low">Low</option>
-                        </select>
-                      </div>
-                      
-                      {/* Status Selector */}
-                      <div className="flex items-center gap-2">
-                        <label className="text-sm font-medium text-gray-600">Status:</label>
-                        <select
-                          value={task.status}
-                          onChange={(e) => handleUpdateTaskStatus(task.id, e.target.value as 'pending' | 'in-progress' | 'completed')}
-                          className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(task.status)} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                        >
-                          <option value="pending">Pending</option>
-                          <option value="in-progress">In Progress</option>
-                          <option value="completed">Completed</option>
-                        </select>
-                      </div>
-                      
-                      {/* Created Date */}
+                    {/* Created Date */}
+                    <div className="ml-9 mt-2">
                       <div className="text-xs text-gray-500">
                         Created: {new Date(task.created_at).toLocaleDateString()}
                       </div>
