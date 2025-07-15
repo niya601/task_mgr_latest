@@ -5,6 +5,7 @@ import { signOut } from './lib/supabase';
 import LoginPage from './components/LoginPage';
 import SignupPage from './components/SignupPage';
 import Dashboard from './components/Dashboard';
+import UserProfile from './components/UserProfile';
 
 function App() {
   const [currentPage, setCurrentPage] = React.useState<'home' | 'login' | 'signup' | 'dashboard'>('home');
@@ -56,8 +57,17 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100">
+      {/* Header with User Profile (when logged in) */}
+      {user && (
+        <div className="bg-white/30 backdrop-blur-sm border-b border-white/20">
+          <div className="container mx-auto px-4 py-4 flex justify-end">
+            <UserProfile onLogout={handleLogout} />
+          </div>
+        </div>
+      )}
+
       {/* Hero Section */}
-      <div className="container mx-auto px-4 py-16">
+      <div className={`container mx-auto px-4 ${user ? 'py-12' : 'py-16'}`}>
         {/* Header with Icon */}
         <div className="text-center mb-16">
           <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl shadow-lg mb-8">
