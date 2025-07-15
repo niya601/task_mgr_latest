@@ -24,10 +24,6 @@ function App() {
     );
   }
 
-  // If user is authenticated, show dashboard by default
-  if (user && currentPage === 'home') {
-    setCurrentPage('dashboard');
-  }
 
   const handleLogout = async () => {
     await signOut();
