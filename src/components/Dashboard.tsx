@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { getTasks, createTask, updateTaskStatus, updateTaskPriority, deleteTask, Task } from '../lib/tasks';
-import { Loader2, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Plus, Trash2, Home } from 'lucide-react';
 import UserProfile from './UserProfile';
 
 interface DashboardProps {
   onLogout: () => void;
+  onBackToHome: () => void;
 }
 
-function Dashboard({ onLogout }: DashboardProps) {
+function Dashboard({ onLogout, onBackToHome }: DashboardProps) {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -155,7 +156,16 @@ function Dashboard({ onLogout }: DashboardProps) {
       {/* Header with User Profile */}
       <div className="bg-white/30 backdrop-blur-sm border-b border-white/20">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-800">TaskFlow Dashboard</h1>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={onBackToHome}
+              className="flex items-center gap-2 bg-white/80 hover:bg-white/90 text-gray-700 hover:text-blue-600 font-medium py-2 px-4 rounded-xl transition-all duration-300 border border-gray-200 hover:border-blue-300 hover:shadow-md group"
+            >
+              <Home className="w-4 h-4 group-hover:scale-110 transition-transform" />
+              <span className="hidden sm:inline">Back to Home</span>
+            </button>
+            <h1 className="text-2xl font-bold text-gray-800">TaskFlow Dashboard</h1>
+          </div>
           <UserProfile onLogout={onLogout} />
         </div>
       </div>
@@ -269,7 +279,13 @@ function Dashboard({ onLogout }: DashboardProps) {
                         <span className="font-semibold text-blue-600 mr-4 min-w-[2rem] text-lg">
                           {index + 1}.
                         </span>
-                        <span className="text-lg text-gray-700 font-medium flex-1">{task.title}</span>
+                        <span className={`text-lg font-medium flex-1 transition-all duration-300 ${
+                          task.status === 'completed' 
+                            ? 'line-through text-gray-500 opacity-75' 
+                            : 'text-gray-700'
+                        }`}>
+                          {task.title}
+                        </span>
                       </div>
                       <button
                         onClick={() => handleDeleteTask(task.id)}
@@ -280,7 +296,9 @@ function Dashboard({ onLogout }: DashboardProps) {
                       </button>
                     </div>
                     
-                    <div className="ml-12 flex flex-wrap gap-4 items-center">
+                    <div className={`ml-12 flex flex-wrap gap-4 items-center transition-opacity duration-300 ${
+                      task.status === 'completed' ? 'opacity-60' : 'opacity-100'
+                    }`}>
                       {/* Priority Selector */}
                       <div className="flex items-center gap-2">
                         <label className="text-sm font-medium text-gray-600">Priority:</label>
