@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { User, LogOut, Settings, ChevronDown, UserCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { getCurrentProfilePicture } from '../lib/profile';
 
 interface UserProfileProps {
   onLogout: () => void;
@@ -10,6 +11,22 @@ interface UserProfileProps {
 function UserProfile({ onLogout, onGoToProfile }: UserProfileProps) {
   const { user } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (user) {
+      loadProfilePicture();
+    }
+  }, [user]);
+
+  const loadProfilePicture = async () => {
+    try {
+      const { url } = await getCurrentProfilePicture();
+      setProfilePictureUrl(url);
+    } catch (err) {
+      console.error('Error loading profile picture:', err);
+    }
+  };
 
   if (!user) return null;
 
@@ -22,8 +39,16 @@ function UserProfile({ onLogout, onGoToProfile }: UserProfileProps) {
         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
         className="flex items-center gap-3 bg-white/80 backdrop-blur-sm hover:bg-white/90 rounded-xl px-4 py-2 transition-all duration-300 border border-gray-200 hover:border-blue-300 hover:shadow-lg group"
       >
-        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
-          <User className="w-4 h-4 text-white" />
+        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center overflow-hidden">
+          {profilePictureUrl ? (
+            <img
+              src={profilePictureUrl}
+              alt="Profile"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <User className="w-4 h-4 text-white" />
+          )}
         </div>
         <div className="text-left hidden md:block">
           <p className="text-sm font-semibold text-gray-800 truncate max-w-32">
