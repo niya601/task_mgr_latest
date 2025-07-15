@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { getTasks, createTask, updateTaskStatus, updateTaskPriority, deleteTask, Task } from '../lib/tasks';
 import { generateSubtasks } from '../lib/subtasks';
-import { Loader2, Plus, Trash2, Home, ChevronDown, ChevronUp } from 'lucide-react';
+import { smartSearch, SearchResult } from '../lib/search';
+import { Loader2, Plus, Trash2, Home, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import UserProfile from './UserProfile';
 
 interface DashboardProps {
@@ -24,6 +25,11 @@ function Dashboard({ onLogout, onBackToHome, onGoToProfile }: DashboardProps) {
   const [expandedSubtasks, setExpandedSubtasks] = useState<{ [taskId: string]: string[] }>({});
   const [loadingSubtasks, setLoadingSubtasks] = useState<{ [taskId: string]: boolean }>({});
   const [subtaskErrors, setSubtaskErrors] = useState<{ [taskId: string]: string }>({});
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [showSearchResults, setShowSearchResults] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -176,6 +182,40 @@ function Dashboard({ onLogout, onBackToHome, onGoToProfile }: DashboardProps) {
     }
   };
 
+  const handleSmartSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+
+    try {
+      setIsSearching(true);
+      setSearchError(null);
+      setShowSearchResults(true);
+      
+      const { data, error } = await smartSearch(searchQuery);
+      
+      if (error) {
+        setSearchError('Failed to perform search');
+        console.error('Search error:', error);
+        setSearchResults([]);
+      } else {
+        setSearchResults(data || []);
+      }
+    } catch (err) {
+      setSearchError('An unexpected error occurred');
+      console.error('Error:', err);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    setSearchResults([]);
+    setShowSearchResults(false);
+    setSearchError(null);
+  };
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high': return 'bg-red-100 text-red-800 border-red-200';
@@ -238,6 +278,137 @@ function Dashboard({ onLogout, onBackToHome, onGoToProfile }: DashboardProps) {
               <p className="text-lg text-gray-600">
                 Welcome back, {user.user_metadata?.full_name || user.email}!
               </p>
+            </div>
+            
+            {/* Smart Search Section */}
+            <div className="mb-8">
+              <form onSubmit={handleSmartSearch} className="bg-gradient-to-r from-blue-50 to-sky-50 rounded-2xl p-6 border border-blue-100">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex-1">
+                    <label htmlFor="smart-search" className="block text-sm font-semibold text-gray-700 mb-2">
+                      Smart Search
+                    </label>
+                    <input
+                      id="smart-search"
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full px-4 py-3 text-base border-2 border-blue-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors duration-300 bg-white placeholder-gray-500"
+                      placeholder="Search your tasks using natural language..."
+                    />
+                  </div>
+                  <div className="flex gap-2 sm:items-end">
+                    <button
+                      type="submit"
+                      disabled={isSearching || !searchQuery.trim()}
+                      className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg active:scale-95 disabled:transform-none disabled:shadow-none flex items-center gap-2 whitespace-nowrap"
+                    >
+                      {isSearching ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Searching...
+                        </>
+                      ) : (
+                        <>
+                          <Search className="w-4 h-4" />
+                          Search
+                        </>
+                      )}
+                    </button>
+                    {showSearchResults && (
+                      <button
+                        type="button"
+                        onClick={clearSearch}
+                        className="bg-gray-500 hover:bg-gray-600 text-white font-medium py-3 px-4 rounded-xl transition-all duration-300 whitespace-nowrap"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </form>
+
+              {/* Search Results */}
+              {showSearchResults && (
+                <div className="mt-4 bg-blue-50 rounded-2xl p-6 border border-blue-100">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                    Search Results {searchResults.length > 0 && `(${searchResults.length})`}
+                  </h3>
+                  
+                  {/* Search Error */}
+                  {searchError && (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
+                      <p className="text-red-600 text-sm font-medium">{searchError}</p>
+                    </div>
+                  )}
+                  
+                  {/* Search Results List */}
+                  {isSearching ? (
+                    <div className="text-center py-8">
+                      <Loader2 className="w-6 h-6 animate-spin mx-auto mb-3 text-blue-600" />
+                      <p className="text-gray-600">Searching your tasks...</p>
+                    </div>
+                  ) : searchResults.length === 0 ? (
+                    <div className="text-center py-6">
+                      <p className="text-gray-600">
+                        {searchQuery ? 'No similar tasks found. Try a different search term.' : 'Enter a search query to find similar tasks.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {searchResults.map((result, index) => (
+                        <div key={result.id} className="bg-white rounded-xl p-4 border border-blue-200 hover:shadow-md transition-shadow">
+                          <div className="flex items-start gap-3">
+                            {/* Result Number */}
+                            <span className="font-semibold text-blue-600 text-sm min-w-[1.5rem] bg-blue-100 rounded-full w-6 h-6 flex items-center justify-center mt-0.5">
+                              {index + 1}
+                            </span>
+                            
+                            {/* Task Content */}
+                            <div className="flex-1">
+                              <h4 className="font-medium text-gray-800 mb-2">{result.text}</h4>
+                              
+                              <div className="flex flex-wrap items-center gap-2 text-sm">
+                                {/* Priority Badge */}
+                                <span className={`px-2 py-1 rounded-full font-medium ${
+                                  result.priority === 'high' 
+                                    ? 'bg-red-100 text-red-700' 
+                                    : result.priority === 'medium'
+                                    ? 'bg-yellow-100 text-yellow-700'
+                                    : 'bg-green-100 text-green-700'
+                                }`}>
+                                  {result.priority === 'high' ? '⚡ High' : result.priority === 'medium' ? '⏰ Medium' : '⭕ Low'}
+                                </span>
+                                
+                                {/* Status Badge */}
+                                <span className={`px-2 py-1 rounded-full font-medium ${
+                                  result.status === 'completed'
+                                    ? 'bg-green-100 text-green-700'
+                                    : result.status === 'in-progress'
+                                    ? 'bg-blue-100 text-blue-700'
+                                    : 'bg-gray-100 text-gray-700'
+                                }`}>
+                                  {result.status === 'completed' ? '✅ Done' : result.status === 'in-progress' ? '📋 In Progress' : '⏳ Pending'}
+                                </span>
+                                
+                                {/* Similarity Score */}
+                                <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full font-medium">
+                                  {Math.round(result.similarity * 100)}% match
+                                </span>
+                                
+                                {/* Created Date */}
+                                <span className="text-gray-500">
+                                  {new Date(result.created_at).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             
             {/* Error Message */}
