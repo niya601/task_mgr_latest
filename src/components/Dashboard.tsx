@@ -425,6 +425,8 @@ function Dashboard({ onLogout, onBackToHome }: DashboardProps) {
             ) : tasks.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-gray-600 text-lg">No tasks yet. Create your first task above!</p>
+              </div>
+            ) : null}
             {/* Summary Stats (always visible) */}
             {!loading && tasks.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
