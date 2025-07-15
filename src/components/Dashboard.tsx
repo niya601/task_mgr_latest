@@ -19,7 +19,7 @@ function Dashboard({ onLogout, onBackToHome }: DashboardProps) {
   const [newStatus, setNewStatus] = useState<'pending' | 'in-progress' | 'completed'>('pending');
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isTasksExpanded, setIsTasksExpanded] = useState(false);
+  const [isAddTaskExpanded, setIsAddTaskExpanded] = useState(false);
   const [expandedSubtasks, setExpandedSubtasks] = useState<{ [taskId: string]: string[] }>({});
   const [loadingSubtasks, setLoadingSubtasks] = useState<{ [taskId: string]: boolean }>({});
   const [subtaskErrors, setSubtaskErrors] = useState<{ [taskId: string]: string }>({});
@@ -247,340 +247,324 @@ function Dashboard({ onLogout, onBackToHome }: DashboardProps) {
             )}
             
             {/* Collapsible Tasks Section */}
-            <div className="mb-8">
-              {/* Tasks Header with Expand/Collapse */}
-              <div 
-                className="flex items-center justify-between bg-gray-50 rounded-2xl p-6 cursor-pointer hover:bg-gray-100 transition-colors duration-300"
-                onClick={() => setIsTasksExpanded(!isTasksExpanded)}
-              >
-                <div className="flex items-center gap-4">
-                  <h3 className="text-2xl font-semibold text-gray-800">
-                    Your Tasks {tasks.length > 0 && `(${tasks.length})`}
-                  </h3>
-                  {!isTasksExpanded && tasks.length === 0 && (
-                    <span className="text-gray-500 text-lg">Click to add your first task</span>
-                  )}
-                </div>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsTasksExpanded(true);
-                    }}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-xl transition-all duration-300 flex items-center gap-2 hover:scale-105"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add Task
-                  </button>
-                  {isTasksExpanded ? (
-                    <ChevronUp className="w-6 h-6 text-gray-600" />
+            <div className="mb-8 space-y-6">
+              {/* Tasks Header */}
+              <div className="flex items-center justify-between bg-gray-50 rounded-2xl p-6">
+                <h3 className="text-2xl font-semibold text-gray-800">
+                  Your Tasks {tasks.length > 0 && `(${tasks.length})`}
+                </h3>
+                <button
+                  onClick={() => setIsAddTaskExpanded(!isAddTaskExpanded)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-xl transition-all duration-300 flex items-center gap-2 hover:scale-105"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Task
+                  {isAddTaskExpanded ? (
+                    <ChevronUp className="w-4 h-4 ml-1" />
                   ) : (
-                    <ChevronDown className="w-6 h-6 text-gray-600" />
+                    <ChevronDown className="w-4 h-4 ml-1" />
                   )}
-                </div>
+                </button>
               </div>
 
-              {/* Expanded Tasks Content */}
-              {isTasksExpanded && (
-                <div className="mt-6 space-y-6">
-                  {/* Add New Task Form */}
-                  <form onSubmit={handleAddTask} className="bg-white border-2 border-blue-200 rounded-2xl p-6">
-                    <h4 className="text-lg font-semibold text-gray-800 mb-4">Add New Task</h4>
-                    
-                    <div className="mb-4">
-                      <input
-                        type="text"
-                        value={newTaskText}
-                        onChange={(e) => setNewTaskText(e.target.value)}
-                        className="w-full px-4 py-3 text-lg border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors duration-300 bg-white"
-                        placeholder="Enter task title"
-                        required
-                        autoFocus
-                      />
+              {/* Collapsible Add New Task Form */}
+              {isAddTaskExpanded && (
+                <form onSubmit={handleAddTask} className="bg-white border-2 border-blue-200 rounded-2xl p-6">
+                  <h4 className="text-lg font-semibold text-gray-800 mb-4">Add New Task</h4>
+                  
+                  <div className="mb-4">
+                    <input
+                      type="text"
+                      value={newTaskText}
+                      onChange={(e) => setNewTaskText(e.target.value)}
+                      className="w-full px-4 py-3 text-lg border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors duration-300 bg-white"
+                      placeholder="Enter task title"
+                      required
+                      autoFocus
+                    />
+                  </div>
+                  
+                  {/* Priority and Status Selectors for New Task */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Priority
+                      </label>
+                      <select
+                        value={newPriority}
+                        onChange={(e) => setNewPriority(e.target.value as 'high' | 'medium' | 'low')}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors duration-300 bg-white"
+                      >
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                      </select>
                     </div>
                     
-                    {/* Priority and Status Selectors for New Task */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Priority
-                        </label>
-                        <select
-                          value={newPriority}
-                          onChange={(e) => setNewPriority(e.target.value as 'high' | 'medium' | 'low')}
-                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors duration-300 bg-white"
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Status
+                      </label>
+                      <select
+                        value={newStatus}
+                        onChange={(e) => setNewStatus(e.target.value as 'pending' | 'in-progress' | 'completed')}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors duration-300 bg-white"
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="in-progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  {/* Form Action Buttons */}
+                  <div className="flex gap-3">
+                    <button
+                      type="submit"
+                      disabled={isAddingTask || !newTaskText.trim()}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg active:scale-95 disabled:transform-none disabled:shadow-none flex items-center justify-center gap-2"
+                    >
+                      {isAddingTask ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          Adding Task...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="w-5 h-5" />
+                          Add Task
+                        </>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddTaskExpanded(false)}
+                      className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-xl transition-colors duration-300"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* Tasks List - Always Visible */}
+              {loading ? (
+                <div className="text-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
+                  <p className="text-gray-600">Loading your tasks...</p>
+                </div>
+              ) : tasks.length === 0 ? (
+                <div className="text-center py-8 bg-gray-50 rounded-xl">
+                  <p className="text-gray-600 text-lg">No tasks yet. Click "Add Task" above to create your first task!</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {tasks.map((task, index) => (
+                    <div key={task.id} className="bg-white rounded-xl p-4 border border-gray-200 hover:shadow-md transition-shadow">
+                      <div className="flex items-center gap-4">
+                        {/* Task Number */}
+                        <span className="font-semibold text-blue-600 text-sm min-w-[1.5rem] bg-blue-50 rounded-full w-6 h-6 flex items-center justify-center">
+                          {index + 1}
+                        </span>
+                        
+                        {/* Checkbox */}
+                        <button
+                          onClick={() => handleUpdateTaskStatus(
+                            task.id, 
+                            task.status === 'completed' ? 'pending' : 'completed'
+                          )}
+                          className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${
+                            task.status === 'completed'
+                              ? 'bg-blue-500 border-blue-500 text-white'
+                              : 'border-gray-300 hover:border-blue-400 bg-white'
+                          }`}
                         >
-                          <option value="high">High</option>
-                          <option value="medium">Medium</option>
-                          <option value="low">Low</option>
+                          {task.status === 'completed' && (
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </button>
+                        
+                        {/* Task Title */}
+                        <h3 className={`text-lg font-medium flex-1 transition-all duration-300 ${
+                          task.status === 'completed' 
+                            ? 'line-through text-gray-500' 
+                            : 'text-gray-700'
+                        }`}>
+                          {task.text}
+                        </h3>
+                        
+                        {/* Priority Badge */}
+                        <select
+                          value={task.priority}
+                          onChange={(e) => handleUpdateTaskPriority(task.id, e.target.value as 'high' | 'medium' | 'low')}
+                          className={`px-3 py-1 rounded-full text-sm font-medium border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer ${
+                            task.priority === 'high' 
+                              ? 'bg-red-100 text-red-700' 
+                              : task.priority === 'medium'
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : 'bg-green-100 text-green-700'
+                          }`}
+                        >
+                          <option value="high">⚡ High</option>
+                          <option value="medium">⏰ Medium</option>
+                          <option value="low">⭕ Low</option>
                         </select>
+                        
+                        {/* Status Badge */}
+                        <select
+                          value={task.status}
+                          onChange={(e) => handleUpdateTaskStatus(task.id, e.target.value as 'pending' | 'in-progress' | 'completed')}
+                          className={`px-3 py-1 rounded-full text-sm font-medium border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer ${
+                            task.status === 'completed'
+                              ? 'bg-green-100 text-green-700'
+                              : task.status === 'in-progress'
+                              ? 'bg-blue-100 text-blue-700'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}
+                        >
+                          <option value="pending">⏳ Pending</option>
+                          <option value="in-progress">📋 In Progress</option>
+                          <option value="completed">✅ Done</option>
+                        </select>
+                        
+                        {/* Delete Button */}
+                        <button
+                          onClick={() => handleDeleteTask(task.id)}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors"
+                          title="Delete task"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                       
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Status
-                        </label>
-                        <select
-                          value={newStatus}
-                          onChange={(e) => setNewStatus(e.target.value as 'pending' | 'in-progress' | 'completed')}
-                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors duration-300 bg-white"
-                        >
-                          <option value="pending">Pending</option>
-                          <option value="in-progress">In Progress</option>
-                          <option value="completed">Completed</option>
-                        </select>
+                      {/* Created Date */}
+                      <div className="ml-12 mt-2">
+                        <div className="text-xs text-gray-500">
+                          Created: {new Date(task.created_at).toLocaleDateString()}
+                        </div>
                       </div>
-                    </div>
-                    
-                    {/* Form Action Buttons */}
-                    <div className="flex gap-3">
-                      <button
-                        type="submit"
-                        disabled={isAddingTask || !newTaskText.trim()}
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg active:scale-95 disabled:transform-none disabled:shadow-none flex items-center justify-center gap-2"
-                      >
-                        {isAddingTask ? (
-                          <>
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            Adding Task...
-                          </>
-                        ) : (
-                          <>
-                            <Plus className="w-5 h-5" />
-                            Add Task
-                          </>
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setIsTasksExpanded(false)}
-                        className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-xl transition-colors duration-300"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
-
-                  {/* Tasks List */}
-                  {loading ? (
-                    <div className="text-center py-12">
-                      <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
-                      <p className="text-gray-600">Loading your tasks...</p>
-                    </div>
-                  ) : tasks.length === 0 ? (
-                    <div className="text-center py-8 bg-gray-50 rounded-xl">
-                      <p className="text-gray-600 text-lg">No tasks yet. Add your first task above!</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {tasks.map((task, index) => (
-                        <div key={task.id} className="bg-white rounded-xl p-4 border border-gray-200 hover:shadow-md transition-shadow">
-                          <div className="flex items-center gap-4">
-                            {/* Task Number */}
-                            <span className="font-semibold text-blue-600 text-sm min-w-[1.5rem] bg-blue-50 rounded-full w-6 h-6 flex items-center justify-center">
-                              {index + 1}
-                            </span>
-                            
-                            {/* Checkbox */}
-                            <button
-                              onClick={() => handleUpdateTaskStatus(
-                                task.id, 
-                                task.status === 'completed' ? 'pending' : 'completed'
-                              )}
-                              className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${
-                                task.status === 'completed'
-                                  ? 'bg-blue-500 border-blue-500 text-white'
-                                  : 'border-gray-300 hover:border-blue-400 bg-white'
-                              }`}
-                            >
-                              {task.status === 'completed' && (
-                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                              )}
-                            </button>
-                            
-                            {/* Task Title */}
-                            <h3 className={`text-lg font-medium flex-1 transition-all duration-300 ${
-                              task.status === 'completed' 
-                                ? 'line-through text-gray-500' 
-                                : 'text-gray-700'
-                            }`}>
-                              {task.text}
-                            </h3>
-                            
-                            {/* Priority Badge */}
-                            <select
-                              value={task.priority}
-                              onChange={(e) => handleUpdateTaskPriority(task.id, e.target.value as 'high' | 'medium' | 'low')}
-                              className={`px-3 py-1 rounded-full text-sm font-medium border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer ${
-                                task.priority === 'high' 
-                                  ? 'bg-red-100 text-red-700' 
-                                  : task.priority === 'medium'
-                                  ? 'bg-yellow-100 text-yellow-700'
-                                  : 'bg-green-100 text-green-700'
-                              }`}
-                            >
-                              <option value="high">⚡ High</option>
-                              <option value="medium">⏰ Medium</option>
-                              <option value="low">⭕ Low</option>
-                            </select>
-                            
-                            {/* Status Badge */}
-                            <select
-                              value={task.status}
-                              onChange={(e) => handleUpdateTaskStatus(task.id, e.target.value as 'pending' | 'in-progress' | 'completed')}
-                              className={`px-3 py-1 rounded-full text-sm font-medium border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer ${
-                                task.status === 'completed'
-                                  ? 'bg-green-100 text-green-700'
-                                  : task.status === 'in-progress'
-                                  ? 'bg-blue-100 text-blue-700'
-                                  : 'bg-gray-100 text-gray-700'
-                              }`}
-                            >
-                              <option value="pending">⏳ Pending</option>
-                              <option value="in-progress">📋 In Progress</option>
-                              <option value="completed">✅ Done</option>
-                            </select>
-                            
-                            {/* Delete Button */}
-                            <button
-                              onClick={() => handleDeleteTask(task.id)}
-                              className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors"
-                              title="Delete task"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                          
-                          {/* Created Date */}
-                          <div className="ml-12 mt-2">
-                            <div className="text-xs text-gray-500">
-                              Created: {new Date(task.created_at).toLocaleDateString()}
-                            </div>
-                          </div>
-                          
-                          {/* Subtasks Display */}
-                          {task.subtasks && task.subtasks.length > 0 && (
-                            <div className="ml-12 mt-3">
-                              <h4 className="text-sm font-semibold text-gray-700 mb-2">Subtasks:</h4>
-                              <div className="space-y-2">
-                                {task.subtasks.map((subtask, subtaskIndex) => (
-                                  <div key={subtask.id} className="flex items-center gap-3 bg-gray-50 rounded-lg p-3 border border-gray-200">
-                                    {/* Subtask Checkbox */}
-                                    <button
-                                      onClick={() => handleUpdateTaskStatus(
-                                        subtask.id, 
-                                        subtask.status === 'completed' ? 'pending' : 'completed'
-                                      )}
-                                      className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all duration-200 ${
-                                        subtask.status === 'completed'
-                                          ? 'bg-blue-500 border-blue-500 text-white'
-                                          : 'border-gray-300 hover:border-blue-400 bg-white'
-                                      }`}
-                                    >
-                                      {subtask.status === 'completed' && (
-                                        <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
-                                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                        </svg>
-                                      )}
-                                    </button>
-                                    
-                                    {/* Subtask Text */}
-                                    <span className={`text-sm flex-1 transition-all duration-300 ${
-                                      subtask.status === 'completed' 
-                                        ? 'line-through text-gray-500' 
-                                        : 'text-gray-700'
-                                    }`}>
-                                      {subtask.text}
-                                    </span>
-                                    
-                                    {/* Subtask Status */}
-                                    <select
-                                      value={subtask.status}
-                                      onChange={(e) => {
-                                        const newStatus = e.target.value as 'pending' | 'in-progress' | 'completed';
-                                        handleUpdateTaskStatus(subtask.id, newStatus);
-                                      }}
-                                      className={`px-2 py-1 rounded-md text-xs font-medium border-0 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer ${
-                                        subtask.status === 'completed'
-                                          ? 'bg-green-100 text-green-700'
-                                          : subtask.status === 'in-progress'
-                                          ? 'bg-blue-100 text-blue-700'
-                                          : 'bg-gray-100 text-gray-700'
-                                      }`}
-                                    >
-                                      <option value="pending">⏳ Pending</option>
-                                      <option value="in-progress">📋 In Progress</option>
-                                      <option value="completed">✅ Done</option>
-                                    </select>
-                                    
-                                    {/* Delete Subtask */}
-                                    <button
-                                      onClick={() => handleDeleteTask(subtask.id)}
-                                      className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded transition-colors"
-                                      title="Delete subtask"
-                                    >
-                                      <Trash2 className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                ))}
+                      
+                      {/* Subtasks Display */}
+                      {task.subtasks && task.subtasks.length > 0 && (
+                        <div className="ml-12 mt-3">
+                          <h4 className="text-sm font-semibold text-gray-700 mb-2">Subtasks:</h4>
+                          <div className="space-y-2">
+                            {task.subtasks.map((subtask, subtaskIndex) => (
+                              <div key={subtask.id} className="flex items-center gap-3 bg-gray-50 rounded-lg p-3 border border-gray-200">
+                                {/* Subtask Checkbox */}
+                                <button
+                                  onClick={() => handleUpdateTaskStatus(
+                                    subtask.id, 
+                                    subtask.status === 'completed' ? 'pending' : 'completed'
+                                  )}
+                                  className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all duration-200 ${
+                                    subtask.status === 'completed'
+                                      ? 'bg-blue-500 border-blue-500 text-white'
+                                      : 'border-gray-300 hover:border-blue-400 bg-white'
+                                  }`}
+                                >
+                                  {subtask.status === 'completed' && (
+                                    <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                  )}
+                                </button>
+                                
+                                {/* Subtask Text */}
+                                <span className={`text-sm flex-1 transition-all duration-300 ${
+                                  subtask.status === 'completed' 
+                                    ? 'line-through text-gray-500' 
+                                    : 'text-gray-700'
+                                }`}>
+                                  {subtask.text}
+                                </span>
+                                
+                                {/* Subtask Status */}
+                                <select
+                                  value={subtask.status}
+                                  onChange={(e) => {
+                                    const newStatus = e.target.value as 'pending' | 'in-progress' | 'completed';
+                                    handleUpdateTaskStatus(subtask.id, newStatus);
+                                  }}
+                                  className={`px-2 py-1 rounded-md text-xs font-medium border-0 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer ${
+                                    subtask.status === 'completed'
+                                      ? 'bg-green-100 text-green-700'
+                                      : subtask.status === 'in-progress'
+                                      ? 'bg-blue-100 text-blue-700'
+                                      : 'bg-gray-100 text-gray-700'
+                                  }`}
+                                >
+                                  <option value="pending">⏳ Pending</option>
+                                  <option value="in-progress">📋 In Progress</option>
+                                  <option value="completed">✅ Done</option>
+                                </select>
+                                
+                                {/* Delete Subtask */}
+                                <button
+                                  onClick={() => handleDeleteTask(subtask.id)}
+                                  className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded transition-colors"
+                                  title="Delete subtask"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
                               </div>
-                            </div>
-                          )}
-                          
-                          {/* Generate Subtasks Button */}
-                          <div className="ml-12 mt-3">
-                            <button
-                              onClick={() => handleGenerateSubtasks(task.id, task.text)}
-                              disabled={loadingSubtasks[task.id]}
-                              className="bg-purple-100 hover:bg-purple-200 disabled:bg-purple-50 text-purple-700 disabled:text-purple-400 font-medium py-2 px-4 rounded-lg text-sm transition-all duration-300 flex items-center gap-2 disabled:cursor-not-allowed"
-                            >
-                              {loadingSubtasks[task.id] ? (
-                                <>
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                  Generating...
-                                </>
-                              ) : (
-                                <>
-                                  ✨ Generate Subtasks with AI
-                                </>
-                              )}
-                            </button>
-                            
-                            {/* Subtask Error */}
-                            {subtaskErrors[task.id] && (
-                              <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg">
-                                <p className="text-red-600 text-sm">{subtaskErrors[task.id]}</p>
-                              </div>
-                            )}
-                            
-                            {/* Generated Subtasks */}
-                            {expandedSubtasks[task.id] && expandedSubtasks[task.id].length > 0 && (
-                              <div className="mt-3 bg-purple-50 rounded-lg p-4 border border-purple-200">
-                                <h4 className="text-sm font-semibold text-purple-800 mb-3">
-                                  AI Generated Subtasks:
-                                </h4>
-                                <div className="space-y-2">
-                                  {expandedSubtasks[task.id].map((subtask, index) => (
-                                    <div key={index} className="flex items-center justify-between bg-white rounded-lg p-3 border border-purple-100">
-                                      <span className="text-sm text-gray-700 flex-1">{subtask}</span>
-                                      <button
-                                        onClick={() => handleSaveSubtask(subtask, task)}
-                                        className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-1 px-3 rounded-md text-xs transition-all duration-300 hover:scale-105 ml-3"
-                                      >
-                                        Save
-                                      </button>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
+                            ))}
                           </div>
                         </div>
-                      ))}
+                      )}
+                      
+                      {/* Generate Subtasks Button */}
+                      <div className="ml-12 mt-3">
+                        <button
+                          onClick={() => handleGenerateSubtasks(task.id, task.text)}
+                          disabled={loadingSubtasks[task.id]}
+                          className="bg-purple-100 hover:bg-purple-200 disabled:bg-purple-50 text-purple-700 disabled:text-purple-400 font-medium py-2 px-4 rounded-lg text-sm transition-all duration-300 flex items-center gap-2 disabled:cursor-not-allowed"
+                        >
+                          {loadingSubtasks[task.id] ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              Generating...
+                            </>
+                          ) : (
+                            <>
+                              ✨ Generate Subtasks with AI
+                            </>
+                          )}
+                        </button>
+                        
+                        {/* Subtask Error */}
+                        {subtaskErrors[task.id] && (
+                          <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg">
+                            <p className="text-red-600 text-sm">{subtaskErrors[task.id]}</p>
+                          </div>
+                        )}
+                        
+                        {/* Generated Subtasks */}
+                        {expandedSubtasks[task.id] && expandedSubtasks[task.id].length > 0 && (
+                          <div className="mt-3 bg-purple-50 rounded-lg p-4 border border-purple-200">
+                            <h4 className="text-sm font-semibold text-purple-800 mb-3">
+                              AI Generated Subtasks:
+                            </h4>
+                            <div className="space-y-2">
+                              {expandedSubtasks[task.id].map((subtask, index) => (
+                                <div key={index} className="flex items-center justify-between bg-white rounded-lg p-3 border border-purple-100">
+                                  <span className="text-sm text-gray-700 flex-1">{subtask}</span>
+                                  <button
+                                    onClick={() => handleSaveSubtask(subtask, task)}
+                                    className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-1 px-3 rounded-md text-xs transition-all duration-300 hover:scale-105 ml-3"
+                                  >
+                                    Save
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  )}
+                  ))}
                 </div>
               )}
             </div>
@@ -616,9 +600,10 @@ function Dashboard({ onLogout, onBackToHome }: DashboardProps) {
                     {tasks.filter(task => task.status === 'completed').length}
                   </div>
                   <div className="text-sm text-green-700">Completed</div>
+                      >
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
