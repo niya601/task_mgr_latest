@@ -223,7 +223,6 @@ function Dashboard({ onLogout, onBackToHome, onGoToProfile }: DashboardProps) {
             <h1 className="text-2xl font-bold text-gray-800">TaskFlow Dashboard</h1>
           </div>
           <UserProfile onLogout={onLogout} onGoToProfile={onGoToProfile} />
-          <UserProfile onLogout={onLogout} onGoToProfile={() => setCurrentPage('profile')} />
         </div>
       </div>
 
