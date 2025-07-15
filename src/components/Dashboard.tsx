@@ -151,13 +151,18 @@ function Dashboard({ onLogout, onBackToHome }: DashboardProps) {
 
   const handleSaveSubtask = async (subtaskText: string, parentTask: Task) => {
     try {
-      const { data, error } = await createTask(subtaskText, parentTask.priority, 'pending');
+      const { data, error } = await createTask(subtaskText, parentTask.priority, 'pending', parentTask.id);
       
       if (error) {
         setError('Failed to save subtask');
         console.error('Error saving subtask:', error);
       } else if (data) {
-        setTasks([data, ...tasks]);
+        // Update the parent task with the new subtask
+        setTasks(tasks.map(task => 
+          task.id === parentTask.id 
+            ? { ...task, subtasks: [...(task.subtasks || []), data] }
+            : task
+        ));
         // Remove the saved subtask from the suggestions
         setExpandedSubtasks(prev => ({
           ...prev,
@@ -449,14 +454,80 @@ function Dashboard({ onLogout, onBackToHome }: DashboardProps) {
                           </div>
                           
                           {/* Created Date */}
-                          <div className="ml-10 mt-2">
+                          <div className="ml-12 mt-2">
                             <div className="text-xs text-gray-500">
                               Created: {new Date(task.created_at).toLocaleDateString()}
                             </div>
                           </div>
                           
+                          {/* Subtasks Display */}
+                          {task.subtasks && task.subtasks.length > 0 && (
+                            <div className="ml-12 mt-3">
+                              <h4 className="text-sm font-semibold text-gray-700 mb-2">Subtasks:</h4>
+                              <div className="space-y-2">
+                                {task.subtasks.map((subtask, subtaskIndex) => (
+                                  <div key={subtask.id} className="flex items-center gap-3 bg-gray-50 rounded-lg p-3 border border-gray-200">
+                                    {/* Subtask Checkbox */}
+                                    <button
+                                      onClick={() => handleUpdateTaskStatus(
+                                        subtask.id, 
+                                        subtask.status === 'completed' ? 'pending' : 'completed'
+                                      )}
+                                      className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all duration-200 ${
+                                        subtask.status === 'completed'
+                                          ? 'bg-blue-500 border-blue-500 text-white'
+                                          : 'border-gray-300 hover:border-blue-400 bg-white'
+                                      }`}
+                                    >
+                                      {subtask.status === 'completed' && (
+                                        <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+                                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                        </svg>
+                                      )}
+                                    </button>
+                                    
+                                    {/* Subtask Text */}
+                                    <span className={`text-sm flex-1 transition-all duration-300 ${
+                                      subtask.status === 'completed' 
+                                        ? 'line-through text-gray-500' 
+                                        : 'text-gray-700'
+                                    }`}>
+                                      {subtask.text}
+                                    </span>
+                                    
+                                    {/* Subtask Status */}
+                                    <select
+                                      value={subtask.status}
+                                      onChange={(e) => handleUpdateTaskStatus(subtask.id, e.target.value as 'pending' | 'in-progress' | 'completed')}
+                                      className={`px-2 py-1 rounded-md text-xs font-medium border-0 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer ${
+                                        subtask.status === 'completed'
+                                          ? 'bg-green-100 text-green-700'
+                                          : subtask.status === 'in-progress'
+                                          ? 'bg-blue-100 text-blue-700'
+                                          : 'bg-gray-100 text-gray-700'
+                                      }`}
+                                    >
+                                      <option value="pending">⏳ Pending</option>
+                                      <option value="in-progress">📋 In Progress</option>
+                                      <option value="completed">✅ Done</option>
+                                    </select>
+                                    
+                                    {/* Delete Subtask */}
+                                    <button
+                                      onClick={() => handleDeleteTask(subtask.id)}
+                                      className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded transition-colors"
+                                      title="Delete subtask"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
                           {/* Generate Subtasks Button */}
-                          <div className="ml-10 mt-3">
+                          <div className="ml-12 mt-3">
                             <button
                               onClick={() => handleGenerateSubtasks(task.id, task.text)}
                               disabled={loadingSubtasks[task.id]}
@@ -527,19 +598,31 @@ function Dashboard({ onLogout, onBackToHome }: DashboardProps) {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
                 <div className="bg-blue-50 rounded-xl p-4 text-center">
                   <div className="text-2xl font-bold text-blue-600">
-                    {tasks.filter(t => t.status === 'pending').length}
+                    {tasks.reduce((count, task) => {
+                      const mainTaskCount = task.status === 'pending' ? 1 : 0;
+                      const subtaskCount = (task.subtasks || []).filter(st => st.status === 'pending').length;
+                      return count + mainTaskCount + subtaskCount;
+                    }, 0)}
                   </div>
                   <div className="text-sm text-blue-700">Pending Tasks</div>
                 </div>
                 <div className="bg-yellow-50 rounded-xl p-4 text-center">
                   <div className="text-2xl font-bold text-yellow-600">
-                    {tasks.filter(t => t.status === 'in-progress').length}
+                    {tasks.reduce((count, task) => {
+                      const mainTaskCount = task.status === 'in-progress' ? 1 : 0;
+                      const subtaskCount = (task.subtasks || []).filter(st => st.status === 'in-progress').length;
+                      return count + mainTaskCount + subtaskCount;
+                    }, 0)}
                   </div>
                   <div className="text-sm text-yellow-700">In Progress</div>
                 </div>
                 <div className="bg-green-50 rounded-xl p-4 text-center">
                   <div className="text-2xl font-bold text-green-600">
-                    {tasks.filter(t => t.status === 'completed').length}
+                    {tasks.reduce((count, task) => {
+                      const mainTaskCount = task.status === 'completed' ? 1 : 0;
+                      const subtaskCount = (task.subtasks || []).filter(st => st.status === 'completed').length;
+                      return count + mainTaskCount + subtaskCount;
+                    }, 0)}
                   </div>
                   <div className="text-sm text-green-700">Completed</div>
                 </div>

@@ -6,23 +6,48 @@ export interface Task {
   text: string;
   priority: 'high' | 'medium' | 'low';
   status: 'pending' | 'in-progress' | 'completed';
+  parent_task_id: string | null;
   created_at: string;
   updated_at: string;
+  subtasks?: Task[];
 }
 
 export const getTasks = async (): Promise<{ data: Task[] | null; error: any }> => {
+  // First get all main tasks (no parent)
   const { data, error } = await supabase
     .from('tasks')
     .select('*')
+    .is('parent_task_id', null)
     .order('created_at', { ascending: false })
   
-  return { data, error }
+  if (error || !data) {
+    return { data, error }
+  }
+
+  // Then get subtasks for each main task
+  const tasksWithSubtasks = await Promise.all(
+    data.map(async (task) => {
+      const { data: subtasks, error: subtaskError } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('parent_task_id', task.id)
+        .order('created_at', { ascending: true })
+      
+      return {
+        ...task,
+        subtasks: subtaskError ? [] : (subtasks || [])
+      }
+    })
+  )
+
+  return { data: tasksWithSubtasks, error: null }
 }
 
 export const createTask = async (
   text: string, 
   priority: 'high' | 'medium' | 'low', 
-  status: 'pending' | 'in-progress' | 'completed'
+  status: 'pending' | 'in-progress' | 'completed',
+  parentTaskId?: string
 ): Promise<{ data: Task | null; error: any }> => {
   const { data: { user } } = await supabase.auth.getUser()
   
@@ -38,6 +63,7 @@ export const createTask = async (
         text,
         priority,
         status,
+        parent_task_id: parentTaskId || null,
         updated_at: new Date().toISOString()
       }
     ])
